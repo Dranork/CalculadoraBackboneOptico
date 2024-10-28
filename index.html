@@ -7,58 +7,111 @@
     <title>Planilha de Quantificação de Material - Backbone Óptico</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 20px;
+            background-color: #f5f7fa;
+            color: #333;
         }
-
+    
+        h1, h3 {
+            color: #2c3e50;
+        }
+    
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+    
+        h3 {
+            font-size: 1.2em;
+            margin-bottom: 8px;
+        }
+    
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            background-color: #ffffff;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        table,
-        th,
-        td {
-            border: 1px solid black;
-        }
-
-        th,
-        td {
-            padding: 8px;
+    
+        th, td {
+            padding: 10px;
             text-align: center;
+            border: 1px solid #ddd;
         }
-
+    
         th {
-            background-color: #f2f2f2;
+            background-color: #34495e;
+            color: #ffffff;
+            font-weight: 600;
         }
-
+    
         .section-title {
-            background-color: #dcdcdc;
+            background-color: #bdc3c7;
             font-weight: bold;
+            color: #333;
+            padding: 10px;
+            border-radius: 4px;
         }
-
+    
         .input-row {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-
-        #existeBackboneSecundario {
-            display: none;
+    
+        label {
+            font-weight: 500;
+            color: #2c3e50;
         }
-
-        #existeBackbonePrimario {
-            display: none;
+    
+        input[type="checkbox"], input[type="number"], select, button {
+            padding: 8px;
+            font-size: 0.9em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: all 0.3s ease;
         }
-
+    
+        input[type="checkbox"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+    
+        button {
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+    
+        button:hover {
+            background-color: #2980b9;
+        }
+    
         .backbone-container {
             display: flex;
+            flex-wrap: wrap;
             gap: 20px;
+            margin-bottom: 15px;
         }
-
-        .backbone-container>div {
+    
+        .backbone-container > div {
             flex: 1;
+            min-width: 250px;
+        }
+    
+        .input-row input, .input-row select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            font-size: 0.9em;
         }
     </style>
+    
 </head>
 
 <body>
@@ -69,11 +122,11 @@
     <div class="backbone-container">
         <div class="input-row">
             <label for="existeBackbonePrimario">Existe Backbone Primário?</label>
-            <input type="checkbox" onclick="MostraBackbonePrimario()" id="checkPrimario">
+            <input type="checkbox" onclick="MostraBackbonePrimario(); validateInputs();" id="checkPrimario">
         </div>
         <div class="input-row">
             <label for="existeBackboneSecundario">Existe Backbone Secundário?</label>
-            <input type="checkbox" onclick="MostraBackboneSecundario()" id="checkSecundario">
+            <input type="checkbox" onclick="MostraBackboneSecundario(); validateInputs();" id="checkSecundario">
         </div>
     </div>
 
@@ -84,7 +137,8 @@
                 <input type="number" id="fibrasPorCaboPrimario" min="1" required>
             </div>
             <div class="input-row">
-                <label for="distancia">Distância (em metros):</label>
+                <label for="distancia">Distância entre SEQs(em metros):</label>
+                <p>(deixe vazia caso a fibra chegue direto)</p>
                 <input type="number" id="distancia" min="0" required>
             </div>
             <div class="input-row">
@@ -113,6 +167,10 @@
                 <input type="number" id="numeroPavimentos" min="1" required>
             </div>
             <div class="input-row">
+                <label for="qntdBackbones">Backbones por andar:</label>
+                <input type="number" id="qntdBackbones" min="1" required>
+            </div>
+            <div class="input-row">
                 <label for="alturaPeDireito">Altura do Pé-Direito (em metros):</label>
                 <input type="number" id="alturaPeDireito" min="1" required>
             </div>
@@ -133,7 +191,7 @@
         </div>
     </div>
 
-    <button onclick="gerarBackboneOptico()">Gerar Planilha de Backbone</button>
+    <button id="gerarButton" onclick="gerarBackboneOptico()" disabled>Gerar Planilha de Backbone</button>
 
     <h3>Planilha Resultado - Backbone Óptico</h3>
     <table id="planilhaTabela">
@@ -150,33 +208,81 @@
     </table>
 
     <script>
+        function validateInputs() {
+            const checkPrimario = document.getElementById("checkPrimario").checked;
+            const checkSecundario = document.getElementById("checkSecundario").checked;
+
+            let camposPreenchidos = true;
+
+            if (checkPrimario) {
+                camposPreenchidos &= document.getElementById("fibrasPorCaboPrimario").value &&
+                    document.getElementById("distancia").value + 1;
+            }
+
+            if (checkSecundario) {
+                camposPreenchidos &= document.getElementById("fibrasPorCaboSecundario").value &&
+                    document.getElementById("numeroPavimentos").value &&
+                    document.getElementById("qntdBackbones").value &&
+                    document.getElementById("alturaPeDireito").value;
+            }
+
+            document.getElementById("gerarButton").disabled = !camposPreenchidos;
+        }
+
+        // Adiciona o evento de monitoramento em cada campo
+        document.querySelectorAll("input[type='number'], select").forEach(element => {
+            element.addEventListener("input", validateInputs);
+        });
         function gerarBackboneOptico() {
-            const fibrasPorCaboPrimario = document.getElementById('fibrasPorCaboPrimario').value * 2;
-            const distancia = parseInt(document.getElementById('distancia').value);
+            let fibrasPorCaboPrimario = parseInt(document.getElementById('fibrasPorCaboPrimario').value * 2);
+            let distancia = document.getElementById('distancia').value;
+            let qntdBackbones = parseInt(document.getElementById('qntdBackbones').value);
             const tipoDeFibraPrimario = document.getElementById('tipoDeFibraPrimario').value;
             const tipoDeCaboPrimario = document.getElementById('tipoDeCaboPrimario').value;
-            const fibrasPorCaboSecundario = document.getElementById('fibrasPorCaboSecundario').value * 2;
-            const numeroPavimentos = document.getElementById('numeroPavimentos').value;
-            const alturaPeDireito = document.getElementById('alturaPeDireito').value;
+            let fibrasPorCaboSecundario = parseInt(document.getElementById('fibrasPorCaboSecundario').value * 2);
+            let numeroPavimentos = document.getElementById('numeroPavimentos').value;
+            let alturaPeDireito = document.getElementById('alturaPeDireito').value;
             const tipoDeFibraSecundario = document.getElementById('tipoDeFibraSecundario').value;
             const tipoDeCaboSecundario = document.getElementById('tipoDeCaboSecundario').value;
 
             const tabela = document.getElementById('planilhaTabela').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
+
+
+            console.log(distancia);
+
             let item = 1;
 
             function adicionarLinha(descricao, unidade, quantidade) {
-                const row = tabela.insertRow();
-                const cell1 = row.insertCell(0);
-                const cell2 = row.insertCell(1);
-                const cell3 = row.insertCell(2);
-                const cell4 = row.insertCell(3);
-                cell1.innerHTML = item++;
-                cell2.innerHTML = descricao;
-                cell3.innerHTML = unidade;
-                cell4.innerHTML = quantidade;
+                if (quantidade != 0) {
+                    const row = tabela.insertRow();
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+                    const cell3 = row.insertCell(2);
+                    const cell4 = row.insertCell(3);
+                    cell1.innerHTML = item++;
+                    cell2.innerHTML = descricao;
+                    cell3.innerHTML = unidade;
+                    cell4.innerHTML = quantidade;
+                }
             }
+
+            let checkBox = document.getElementById("checkPrimario");
+            let checkBox2 = document.getElementById("checkSecundario");
+
+            if (checkBox.checked == false) {
+                fibrasPorCaboPrimario = 0;
+                distancia = 0;
+            }
+
+            if (checkBox2.checked == false) {
+                fibrasPorCaboSecundario = 0;
+                alturaPeDireito = 0;
+                qntdBackbones = 0;
+                numeroPavimentos = 0;
+            }
+
 
             let caboDeFibraMM = 0;
             let caboDeFibraSM = 0;
@@ -184,31 +290,29 @@
             let caboDeFibraSMLB = 0;
             let chassiDIO = 0;
             let tuboDeProtecao = 0;
-            let acopladorDuploMM = 0;
-            let acopladorDuploSM = 0;
-            let acopladorSimplesMM = 0;
-            let acopladorSimplesSM = 0;
+            let acopladorMM = 0;
+            let acopladorSM = 0;
             let pigTailSM1 = 0;
             let pigTailSM3 = 0;
             let pigTailMM1 = 0;
             let pigTailMM3 = 0
-            let cordaoSM = 0;
-            let cordaoMM = 0;
             let terminadorOptico = 0;
+            let caixaEmenda = 0;
+            let dioPraTodoCantoNessaBCT = false;
 
             //Calculo de tamanho da Fibra
 
             if (tipoDeFibraPrimario == "(FOMMIG) 50 x 125µm") {
                 if (tipoDeCaboPrimario == "Tight Buffer") {
-                    caboDeFibraMM = distancia;
+                    caboDeFibraMM += distancia;
                 } else {
-                    caboDeFibraMMLB = distancia;
+                    caboDeFibraMMLB += distancia;
                 }
             } else {
                 if (tipoDeCaboPrimario == "Tight Buffer") {
-                    caboDeFibraSM = distancia;
+                    caboDeFibraSM += distancia;
                 } else {
-                    caboDeFibraSMLB = distancia;
+                    caboDeFibraSMLB += distancia;
                 }
             }
 
@@ -220,57 +324,116 @@
 
             if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
                 if (tipoDeCaboSecundario == "Tight Buffer") {
-                    caboDeFibraMM += tamanhoCabo;
+                    caboDeFibraMM += tamanhoCabo * qntdBackbones;
                 } else {
-                    caboDeFibraMMLB += tamanhoCabo;
+                    caboDeFibraMMLB += tamanhoCabo * qntdBackbones;
                 }
             } else {
                 if (tipoDeCaboSecundario == "Tight Buffer") {
-                    caboDeFibraSM += tamanhoCabo;
+                    caboDeFibraSM += tamanhoCabo * qntdBackbones;
                 } else {
-                    caboDeFibraSMLB += tamanhoCabo;
+                    caboDeFibraSMLB += tamanhoCabo * qntdBackbones;
                 }
             }
 
-            //calculo de DIO
+            //Calculo de DIO
             let fibrasTotaisSec = fibrasPorCaboSecundario * (numeroPavimentos - 1);
-            chassiDIO = fibrasTotaisSec + fibrasPorCaboPrimario;
 
-            //ImprimindoLinhas
+            chassiDIO = Math.ceil((fibrasTotaisSec + fibrasPorCaboPrimario) / 24);
+            if (fibrasPorCaboSecundario * qntdBackbones > 8) {
+                chassiDIO += Math.ceil((fibrasPorCaboSecundario / 24) * (numeroPavimentos - 1));
+            }
 
-            if (fibrasPorCaboPrimario == fibrasPorCaboSecundario) {
-                if (caboDeFibraMM != 0) {
-                    adicionarLinha("Cabo de Fibra Óptica Tight Buffer (FOMMIG) 50 x 125µm - com " + fibrasPorCaboSecundario + " fibras" , "m", caboDeFibraMM);
+            //Calculo de tubo de proteção
+            tuboDeProtecao = ((fibrasPorCaboSecundario * (numeroPavimentos - 1)) * 2) + fibrasPorCaboPrimario;
+
+            //Calculo de acoplador
+            if (tipoDeFibraPrimario == "(FOMMIG) 50 x 125µm") {
+                acopladorMM = fibrasPorCaboPrimario / 2;
+            } else {
+                acopladorSM = fibrasPorCaboPrimario / 2;
+            }
+            if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
+                acopladorMM += fibrasTotaisSec / 2;
+            } else {
+                acopladorSM += fibrasTotaisSec / 2;
+            }
+
+            if (dioPraTodoCantoNessaBCT == true) {
+                if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
+                    acopladorMM += ((numeroPavimentos - 1) * fibrasPorCaboSecundario) / 2;
+                } else {
+                    acopladorSM += ((numeroPavimentos - 1) * fibrasPorCaboSecundario) / 2;
                 }
-                if (caboDeFibraSM != 0) {
-                    adicionarLinha("Cabo de Fibra Óptica Tight Buffer (FOSMIG) 9 x 125µm - com " + fibrasPorCaboSecundario + " fibras" , "m", caboDeFibraSM);
-                }
-                if (caboDeFibraMMLB != 0) {
-                    adicionarLinha("Cabo de Fibra Óptica Loose Buffer (FOMMIG) 50 x 125µm - com " + fibrasPorCaboSecundario + " fibras" , "m", caboDeFibraMMLB);
-                }
-                if (caboDeFibraSMLB != 0) {
-                    adicionarLinha("Cabo de Fibra Óptica Loose Buffer (FOSMIG) 9 x 125µm - com " + fibrasPorCaboSecundario + " fibras" , "m", caboDeFibraSMLB);
+            }
+
+            //Calculo de pigtail
+            if (tipoDeFibraPrimario == "(FOMMIG) 50 x 125µm") {
+                pigTailMM1 = fibrasPorCaboPrimario;
+            } else {
+                pigTailSM1 = fibrasPorCaboPrimario;
+            }
+            if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
+                pigTailMM1 += fibrasTotaisSec;
+            } else {
+                pigTailSM1 += fibrasTotaisSec;
+            }
+
+            if (dioPraTodoCantoNessaBCT == true) {
+                if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
+                    pigTailMM1 += ((numeroPavimentos - 1) * fibrasPorCaboSecundario);
+                } else {
+                    pigTailSM1 += ((numeroPavimentos - 1) * fibrasPorCaboSecundario);
                 }
             } else {
-                adicionarLinha("Cabo de Fibra Óptica " + tipoDeCaboPrimario + " " + tipoDeFibraPrimario + " - com " + fibrasPorCaboPrimario + " fibras", "m", distancia);
-                adicionarLinha("Cabo de Fibra Óptica " + tipoDeCaboSecundario + " " + tipoDeFibraSecundario + " - com " + fibrasPorCaboSecundario + " fibras", "m", tamanhoCabo);
+                if (tipoDeFibraSecundario == "(FOMMIG) 50 x 125µm") {
+                    pigTailMM3 = ((numeroPavimentos - 1) * fibrasPorCaboSecundario) / 2;
+                } else {
+                    pigTailSM3 = ((numeroPavimentos - 1) * fibrasPorCaboSecundario) / 2;
+                }
             }
 
+            //Calculo do TO
+            if (!dioPraTodoCantoNessaBCT && fibrasPorCaboSecundario != 0) {
+                terminadorOptico = numeroPavimentos - 1;
+            }
 
-            // adicionarLinha("Chassi DIO (Distribuido Interno Óptico) com 24 portas - 1U - 19\"", "unid", Math.ceil(numeroPavimentos / 2));
-            // adicionarLinha("Caixa de Emenda Óptica", "unid", Math.ceil(numeroPavimentos / 2));
-            // adicionarLinha("Tubo de Proteção de Emenda", "unid", fibrasPorCabo * 3);
-            // adicionarLinha("Acoplador Duplo LC", "unid", fibrasPorCabo * 1.5);
-            // adicionarLinha("Pigtail LC", "unid", (fibrasPorCabo * 3));
-            // adicionarLinha("Cordão Óptico LC Duplo", "unid", fibrasPorCabo * 1.5);
-            // adicionarLinha("Terminador Óptico", "unid", fibrasPorCabo / 2);
+            //Calculo de caixa de emenda
+                caixaEmenda = Math.ceil((fibrasTotaisSec + fibrasPorCaboPrimario) / 12);
+                if(dioPraTodoCantoNessaBCT) {
+                    caixaEmenda += Math.ceil((fibrasPorCaboSecundario / 24) * (numeroPavimentos - 1));
+                }
+
+            //ImprimindoLinhas
+            if (fibrasPorCaboPrimario == fibrasPorCaboSecundario) {
+
+                adicionarLinha("Cabo de Fibra Óptica Tight Buffer (FOMMIG) 50 x 125µm - com " + fibrasPorCaboSecundario + " fibras", "m", caboDeFibraMM);
+                adicionarLinha("Cabo de Fibra Óptica Tight Buffer (FOSMIG) 9 x 125µm - com " + fibrasPorCaboSecundario + " fibras", "m", caboDeFibraSM);
+                adicionarLinha("Cabo de Fibra Óptica Loose Buffer (FOMMIG) 50 x 125µm - com " + fibrasPorCaboSecundario + " fibras", "m", caboDeFibraMMLB);
+                adicionarLinha("Cabo de Fibra Óptica Loose Buffer (FOSMIG) 9 x 125µm - com " + fibrasPorCaboSecundario + " fibras", "m", caboDeFibraSMLB);
+            } else {
+                adicionarLinha("Cabo de Fibra Óptica " + tipoDeCaboPrimario + " " + tipoDeFibraPrimario + " - com " + fibrasPorCaboPrimario + " fibras", "m", distancia);
+                adicionarLinha("Cabo de Fibra Óptica " + tipoDeCaboSecundario + " " + tipoDeFibraSecundario + " - com " + fibrasPorCaboSecundario + " fibras", "m", tamanhoCabo * qntdBackbones);
+            }
+
+            adicionarLinha("Chassi DIO (Distribuido Interno Óptico) com 24 portas - 1U - 19\"", "unid", chassiDIO);
+            adicionarLinha("Caixa de Emenda Óptica - 12 fibras", "unid", caixaEmenda);
+            adicionarLinha("Tubo de Proteção de Emenda", "unid", tuboDeProtecao);
+            adicionarLinha("Acoplador óptico 50 x 125µm - MM - LC - duplo", "unid", acopladorMM);
+            adicionarLinha("Acoplador óptico 9 x 125µm - SM - LC - duplo", "unid", acopladorSM);
+            adicionarLinha("Pig tail 50 x 125µm - MM - 1,5m - simples - conector LC", "unid", pigTailMM1);
+            adicionarLinha("Pig tail 50 x 125µm - MM - 3m - duplo - conector LC", "unid", pigTailMM3);
+            adicionarLinha("Pig tail 9 x 125µm - SM - 1,5m - simples - conector LC", "unid", pigTailSM1);
+            adicionarLinha("Pig tail 9 x 125µm - SM - 3m - duplo - conector LC", "unid", pigTailSM3);
+            adicionarLinha("Cordão Óptico 50 x 125µm - MM - 3m - duplo - conector LC", "unid", acopladorMM);
+            adicionarLinha("Cordão Óptico 9 x 125µm - SM - 3m - duplo - conector LC", "unid", acopladorSM);
+            adicionarLinha("Terminador Óptico para 8 fibras", "unid", terminadorOptico);
         }
-
         function MostraBackboneSecundario() {
-            var checkBox = document.getElementById("checkPrimario");
-            var checkBox2 = document.getElementById("checkSecundario");
-            var text1 = document.getElementById("existeBackbonePrimario");
-            var text = document.getElementById("existeBackboneSecundario");
+            let checkBox = document.getElementById("checkPrimario");
+            let checkBox2 = document.getElementById("checkSecundario");
+            let text1 = document.getElementById("existeBackbonePrimario");
+            let text = document.getElementById("existeBackboneSecundario");
 
             if (checkBox2.checked == true) {
                 text.style.display = "block";
@@ -286,9 +449,9 @@
             }
         }
         function MostraBackbonePrimario() {
-            var checkBox = document.getElementById("checkPrimario");
-            var checkBox2 = document.getElementById("checkSecundario");
-            var text = document.getElementById("existeBackbonePrimario");
+            let checkBox = document.getElementById("checkPrimario");
+            let checkBox2 = document.getElementById("checkSecundario");
+            let text = document.getElementById("existeBackbonePrimario");
 
             if (checkBox.checked == true) {
                 text.style.display = "block";
@@ -301,5 +464,4 @@
         }
     </script>
 </body>
-
 </html>
