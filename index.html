@@ -110,6 +110,14 @@
             padding: 10px;
             font-size: 0.9em;
         }
+
+        #existeBackbonePrimario {
+            display: none;
+        }
+        
+        #existeBackboneSecundario {
+            display: none;
+        }
     </style>
     
 </head>
@@ -452,10 +460,15 @@
             let checkBox = document.getElementById("checkPrimario");
             let checkBox2 = document.getElementById("checkSecundario");
             let text = document.getElementById("existeBackbonePrimario");
+            let text2 = document.getElementById("existeBackboneSecundario");
 
             if (checkBox.checked == true) {
                 text.style.display = "block";
                 text.style.visibility = "visible";
+                if (checkBox2.checked == false) {
+                    text.style.display = "block";
+                    text1.style.visibility = "hidden";
+                }
             } else if (checkBox2.checked == true) {
                 text.style.visibility = "hidden";
             } else {
